@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Danbooru AI 標記
 // @namespace    http://tampermonkey.net/
-// @version      1.4.1
-// @description  腳本 v1.4.1 | 字典 v1.0.0 ── 右鍵選單改為傳統系統選單樣式
+// @version      1.4.2
+// @description  腳本 v1.4.2 | 字典 v1.0.0 ── 右鍵選單跟隨系統 light/dark 設定
 // @author       FaltRunner
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
@@ -649,17 +649,17 @@
                 position: fixed; z-index: 2147483647;
                 left: ${Math.min(e.clientX, innerWidth - 220)}px;
                 top: ${Math.min(e.clientY, innerHeight - 120)}px;
-                background: #f0f0f0; color: #000;
-                border: 1px solid #999;
+                background: Canvas; color: CanvasText;
+                border: 1px solid ButtonBorder;
                 border-radius: 2px; padding: 2px 0;
-                box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                box-shadow: 2px 2px 6px rgba(0,0,0,0.25);
                 font-family: system-ui, -apple-system, sans-serif;
                 font-size: 13px; min-width: 200px; user-select: none;
             `;
 
             if (site) {
                 const header = document.createElement('div');
-                header.style.cssText = `padding: 3px 12px 4px; font-size: 11px; color: #666; border-bottom: 1px solid #ccc; margin-bottom: 2px;`;
+                header.style.cssText = `padding: 3px 12px 4px; font-size: 11px; color: GrayText; border-bottom: 1px solid ButtonBorder; margin-bottom: 2px;`;
                 header.textContent = `來自：${site.name}`;
                 ctxMenu.appendChild(header);
             }
@@ -668,14 +668,14 @@
                 const el = document.createElement('div');
                 el.style.cssText = 'padding: 5px 24px; cursor: default;';
                 el.innerHTML = `<span class="lbl">${label}</span>`;
-                el.onmouseenter = () => { el.style.background = '#0078d7'; el.style.color = '#fff'; };
-                el.onmouseleave = () => { el.style.background = ''; el.style.color = '#000'; };
+                el.onmouseenter = () => { el.style.background = 'Highlight'; el.style.color = 'HighlightText'; };
+                el.onmouseleave = () => { el.style.background = ''; el.style.color = ''; };
                 el.onclick = (ev) => { ev.stopPropagation(); onClick(el); };
                 return el;
             };
             const makeSep = () => {
                 const s = document.createElement('div');
-                s.style.cssText = 'border-top: 1px solid #ccc; margin: 2px 0;';
+                s.style.cssText = 'border-top: 1px solid ButtonBorder; margin: 2px 0;';
                 return s;
             };
             const flash = (el, msg) => {
