@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Danbooru AI 標記 (v6.7 Cloud Dict)
+// @name         Danbooru AI 標記
 // @namespace    http://tampermonkey.net/
-// @version      6.7
-// @description  字典從 CDN 下載並快取，無需本地檔案
-// @author       Gemini-CLI
+// @version      1.0.0
+// @description  腳本 v1.0.0 | 字典 v1.0.0 ── 字典從 CDN 下載並快取，無需本地檔案
+// @author       FaltRunner
 // @match        *://danbooru.donmai.us/uploads*
 // @match        *://danbooru.donmai.us/posts/*
 // @grant        GM_xmlhttpRequest
@@ -24,8 +24,8 @@
     const categoryCache = new Map();
     let commonTagsZh = {}; // 外部載入的中文字典
 
-    const DICT_VER     = 'v6.7';
-    const DICT_URL     = 'https://cdn.jsdelivr.net/gh/faltrunner/Danbooru_autotagger@master/DICTIONARY.json';
+    const DICT_VER     = '1.0.0';
+    const DICT_URL     = 'https://cdn.jsdelivr.net/gh/faltrunner/Danbooru_Autotagger@master/DICTIONARY.json';
     const DICT_KEY_DATA = 'danbooruAI_dict_data';
     const DICT_KEY_VER  = 'danbooruAI_dict_version';
 
@@ -326,15 +326,26 @@
 
         await loadDictionary(dictStatus);
 
+        let renderSeq = 0;
         const updateAll = async () => {
+            const seq = ++renderSeq;
             await renderAiResults(lastAiResponse, aiList, applyBtn);
+            if (seq !== renderSeq) return;
             await renderLiveEditor(tagInput, liveEditor);
+            if (seq !== renderSeq) return;
             if (searchInput.value.trim()) {
                 await renderSearchResults(searchInput.value, searchResults, tagInput);
             }
         };
 
-        tagInput.addEventListener("input", updateAll);
+        let inputDebounce;
+        const scheduleUpdate = () => {
+            clearTimeout(inputDebounce);
+            inputDebounce = setTimeout(updateAll, 80);
+        };
+        tagInput.addEventListener("input", scheduleUpdate);
+        tagInput.addEventListener("keyup", scheduleUpdate);
+        tagInput.addEventListener("change", scheduleUpdate);
         slider.oninput = () => { currentThreshold = slider.value / 100; threshVal.innerText = slider.value; updateAll(); };
 
         runBtn.onclick = async () => {
@@ -423,6 +434,7 @@
         searchResults.onmouseover = handleHover;
 
         updateAll();
+        setTimeout(updateAll, 1200);
     }
 
     const observer = new MutationObserver((mutations) => { for (const m of mutations) { if (m.addedNodes.length) { init(); break; } } });
