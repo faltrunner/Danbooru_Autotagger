@@ -27,8 +27,10 @@
 
 | 版本 | 當前 | 說明 |
 |---|---|---|
-| 腳本版本 | `1.3.0` | 功能、架構、UI 異動時更新（SemVer）|
-| 字典版本 | `1.0.0` | DICTIONARY.json 內容更新時遞增，觸發用戶重新下載快取 |
+| 腳本版本 | `1.3.0` | SemVer：新功能→MINOR、bug修復→PATCH、架構改動→MAJOR |
+| 字典版本 | `1.0.0` | SemVer：新增10+標籤→MINOR、單標籤修正→PATCH、格式改變→MAJOR |
+
+詳見 [VERSIONING.md](./VERSIONING.md) 的完整版本控制政策。
 
 **v1.3.0 亮點**（2026-03-16）：
 - ✨ 全網右鍵圖片上傳（支援 Twitter/X、Pixiv、Fanbox 等）
