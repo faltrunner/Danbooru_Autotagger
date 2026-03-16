@@ -59,10 +59,14 @@
    - **Source 欄位**：正確的貼文/作品頁面 URL（而非原始 CDN 圖片 URL）
    - **平台徽章**：顯示識別的來源網站
 
-**支援的平台**（自動識別）：
-- Twitter/X、Pixiv、Fanbox、ArtStation、DeviantArt、Tumblr、Bluesky、Weibo
-- Booth、Fantia、Skeb、Reddit、Instagram、Patreon、Bilibili、Discord、Pinterest
-- Ko-fi、Lofter、Nijie、FurAffinity、Gelbooru...等 22+ 平台
+**支援的平台**（自動識別）：22 個網站（見 [SUPPORTED_SITES.md](./SUPPORTED_SITES.md) 完整列表）
+- 社交：Twitter/X、Bluesky、Tumblr、Mastodon、Reddit、Instagram、Weibo
+- 藝術平台：Pixiv、Fanbox、ArtStation、DeviantArt、Booth、Fantia、Skeb、Patreon
+- 其他：Bilibili、Discord、Pinterest、Ko-fi、Lofter、Nijie、FurAffinity、Gelbooru
+
+**特殊處理**：
+- ✓ **Pixiv、Twitter/X、Fanbox**：DOM 智慧提取，自動從頁面找出正確的作品/貼文 URL
+- ✓ **Pinterest、Discord、Bilibili、Booth、Fantia**：自動清理 CDN 縮圖參數
 
 ### 🧠 在 Danbooru 上使用 AI 標籤
 
