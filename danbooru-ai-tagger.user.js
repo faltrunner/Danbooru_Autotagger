@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Danbooru AI 標記
 // @namespace    http://tampermonkey.net/
-// @version      1.3.0
-// @description  腳本 v1.3.0 | 字典 v1.0.0 ── 正確的來源URL提取（Twitter/Pixiv/Fanbox DOM解析）
+// @version      1.3.1
+// @description  腳本 v1.3.1 | 字典 v1.0.0 ── 雙擊右鍵恢復原生選單
 // @author       FaltRunner
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
@@ -621,10 +621,21 @@
         let ctxMenu = null;
         const removeMenu = () => { if (ctxMenu) { ctxMenu.remove(); ctxMenu = null; } };
 
+        let lastRightClickTime = 0;
+        let lastRightClickImg = null;
+        const DOUBLE_RIGHT_CLICK_MS = 400;
+
         document.addEventListener('contextmenu', (e) => {
             removeMenu();
             const img = e.target.closest('img');
             if (!img || !img.src || img.src.startsWith('data:') || img.src.startsWith('blob:')) return;
+
+            const now = Date.now();
+            const isDouble = (now - lastRightClickTime < DOUBLE_RIGHT_CLICK_MS) && (lastRightClickImg === img);
+            lastRightClickTime = now;
+            lastRightClickImg = img;
+
+            if (isDouble) return; // 雙擊右鍵 → 不阻斷，讓原生選單出現
 
             e.preventDefault();
 
