@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Danbooru AI 標記
 // @namespace    http://tampermonkey.net/
-// @version      1.3.1
-// @description  腳本 v1.3.1 | 字典 v1.0.0 ── 雙擊右鍵恢復原生選單
+// @version      1.4.0
+// @description  腳本 v1.4.0 | 字典 v1.0.0 ── 右鍵選單新增下載/複製圖片/複製網址
 // @author       FaltRunner
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
@@ -664,18 +664,73 @@
                 ctxMenu.appendChild(header);
             }
 
-            const item = document.createElement('div');
-            item.style.cssText = 'padding: 8px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; margin: 2px 4px; border-radius: 5px;';
-            item.innerHTML = `<span style="font-size:16px">📤</span><span>Upload to Danbooru</span>`;
-            item.onmouseenter = () => { item.style.background = 'rgba(205,214,244,0.12)'; };
-            item.onmouseleave = () => { item.style.background = ''; };
-            item.onclick = (ev) => {
-                ev.stopPropagation();
-                GM_openInTab(uploadUrl, { active: true });
-                removeMenu();
+            const makeItem = (icon, label, onClick) => {
+                const el = document.createElement('div');
+                el.style.cssText = 'padding: 8px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; margin: 2px 4px; border-radius: 5px;';
+                el.innerHTML = `<span style="font-size:15px">${icon}</span><span class="lbl">${label}</span>`;
+                el.onmouseenter = () => { el.style.background = 'rgba(205,214,244,0.12)'; };
+                el.onmouseleave = () => { el.style.background = ''; };
+                el.onclick = (ev) => { ev.stopPropagation(); onClick(el); };
+                return el;
+            };
+            const makeSep = () => {
+                const s = document.createElement('div');
+                s.style.cssText = 'border-top: 1px solid rgba(255,255,255,0.08); margin: 3px 0;';
+                return s;
+            };
+            const flash = (el, msg) => {
+                const lbl = el.querySelector('.lbl');
+                const orig = lbl.textContent;
+                lbl.textContent = msg;
+                setTimeout(() => { lbl.textContent = orig; }, 1500);
             };
 
-            ctxMenu.appendChild(item);
+            // ── Upload to Danbooru ──
+            ctxMenu.appendChild(makeItem('📤', 'Upload to Danbooru', () => {
+                GM_openInTab(uploadUrl, { active: true });
+                removeMenu();
+            }));
+
+            ctxMenu.appendChild(makeSep());
+
+            // ── 下載圖片 ──
+            ctxMenu.appendChild(makeItem('⬇️', '下載圖片', (el) => {
+                GM_xmlhttpRequest({
+                    method: 'GET', url: fixedUrl, responseType: 'blob',
+                    onload: (res) => {
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(res.response);
+                        a.download = fixedUrl.split('/').pop().split('?')[0] || 'image';
+                        a.click();
+                        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+                        flash(el, '✓ 下載中…');
+                    },
+                    onerror: () => flash(el, '✗ 失敗')
+                });
+            }));
+
+            // ── 複製圖片 ──
+            ctxMenu.appendChild(makeItem('🖼️', '複製圖片', (el) => {
+                GM_xmlhttpRequest({
+                    method: 'GET', url: fixedUrl, responseType: 'blob',
+                    onload: (res) => {
+                        const blob = res.response;
+                        const mime = blob.type.startsWith('image/') ? blob.type : 'image/png';
+                        navigator.clipboard.write([new ClipboardItem({ [mime]: blob })])
+                            .then(() => flash(el, '✓ 已複製'))
+                            .catch(() => flash(el, '✗ 失敗'));
+                    },
+                    onerror: () => flash(el, '✗ 失敗')
+                });
+            }));
+
+            // ── 複製網址 ──
+            ctxMenu.appendChild(makeItem('🔗', '複製圖片網址', (el) => {
+                navigator.clipboard.writeText(fixedUrl)
+                    .then(() => flash(el, '✓ 已複製'))
+                    .catch(() => flash(el, '✗ 失敗'));
+            }));
+
             document.body.appendChild(ctxMenu);
         }, true);
 
