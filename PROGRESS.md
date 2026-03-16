@@ -2,6 +2,18 @@
 
 ---
 
+## [腳本 v1.4.0] - 2026-03-16
+### 右鍵選單擴充：下載 / 複製圖片 / 複製網址
+
+- **新增 ⬇️ 下載圖片**：透過 `GM_xmlhttpRequest` 抓取圖片 blob，觸發 `<a download>` 下載（繞過 CORS 限制）。
+- **新增 🖼️ 複製圖片**：同樣 blob 抓取後寫入 `ClipboardItem`，支援 PNG/JPEG/WebP。
+- **新增 🔗 複製圖片網址**：將清理後的 CDN URL 寫入剪貼簿。
+- **選單分隔線**：Upload to Danbooru 與三個工具項之間加入視覺分隔。
+- **flash 回饋**：點擊後 item 文字短暫顯示「✓ 已複製」或「✗ 失敗」。
+- **重構**：item 建立邏輯抽成 `makeItem()` / `makeSep()` / `flash()` helper。
+
+---
+
 ## [腳本 v1.3.1] - 2026-03-16
 ### Bug 修正：雙擊右鍵恢復原生選單
 
