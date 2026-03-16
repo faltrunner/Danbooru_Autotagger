@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Danbooru AI 標記
 // @namespace    http://tampermonkey.net/
-// @version      1.0.0
-// @description  腳本 v1.0.0 | 字典 v1.0.0 ── 字典從 CDN 下載並快取，無需本地檔案
+// @version      1.3.0
+// @description  腳本 v1.3.0 | 字典 v1.0.0 ── 正確的來源URL提取（Twitter/Pixiv/Fanbox DOM解析）
 // @author       FaltRunner
-// @match        *://danbooru.donmai.us/uploads*
-// @match        *://danbooru.donmai.us/posts/*
+// @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getValue
 // @grant        GM_setValue
+// @grant        GM_openInTab
 // @connect      autotagger.donmai.us
 // @connect      donmai.us
 // @connect      cdn.jsdelivr.net
@@ -16,6 +16,8 @@
 
 (function() {
     'use strict';
+
+    const isDanbooru = location.hostname === 'danbooru.donmai.us';
 
     let lastAiResponse = [];
     let currentThreshold = 0.35;
@@ -47,8 +49,13 @@
         #tag-search-input:focus { outline: none; border-color: var(--general-tag-color, #0073ff); }
         #tag-search-results { display: flex; flex-wrap: wrap; gap: 2px; max-height: 120px; overflow-y: auto; }
         #tag-search-results:not(:empty) { padding-bottom: 16px; margin-bottom: 6px; }
+        #source-helper-ui { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; font-size: 0.8rem; }
+        #source-site-badge { padding: 1px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; color: #fff; display: none; }
+        #source-fix-btn { font-size: 0.75rem; padding: 2px 8px; cursor: pointer; border: 1px solid rgba(128,128,128,0.4); border-radius: 3px; background: transparent; color: inherit; display: none; }
+        #source-fix-btn:hover { background: rgba(128,128,128,0.1); }
+        #source-fix-status { opacity: 0.55; font-size: 0.7rem; font-style: italic; }
     `;
-    document.head.appendChild(style);
+    if (isDanbooru) document.head.appendChild(style);
 
     function fetchDictionaryFromCDN() {
         return new Promise((resolve, reject) => {
@@ -99,6 +106,175 @@
 
     const getTagInput = () => document.querySelector("#post_tag_string, #upload_tag_string, textarea[name='post[tag_string]'], textarea[name='upload[tag_string]']");
     const getImgElement = () => document.querySelector("#image, .media-asset-image, .upload-preview img, #post-view img, .image-container img");
+    const getSourceInput = () => document.querySelector("#post_source, input[name='post[source]'], input[name='upload[source]']");
+
+    // Extract the proper source *page* URL for an image (not the CDN URL).
+    // Traverses the DOM for site-specific context clues before falling back to pageUrl.
+    function extractSourceUrl(img, pageUrl) {
+        // Twitter/X: find the nearest status link in the surrounding tweet DOM
+        if (/pbs\.twimg\.com/.test(img.src)) {
+            const statusMatch = pageUrl.match(/(https?:\/\/(?:x|twitter)\.com\/[^/?#]+\/status\/\d+)/);
+            if (statusMatch) return statusMatch[1];
+            const article = img.closest('article, [data-testid="tweet"], [data-testid="tweetDetail"]');
+            if (article) {
+                const a = article.querySelector('a[href*="/status/"]');
+                if (a) {
+                    const h = a.getAttribute('href');
+                    const full = h.startsWith('http') ? h : `https://x.com${h}`;
+                    return full.replace(/\/(?:photo|video)\/\d+.*$/, '');
+                }
+            }
+        }
+        // Pixiv: prefer /artworks/ URL, strip extra params
+        if (/i\.pximg\.net/.test(img.src) || /pixiv\.net/.test(pageUrl)) {
+            const artMatch = pageUrl.match(/(https?:\/\/(?:www\.)?pixiv\.net\/(?:\w+\/)?artworks\/\d+)/);
+            if (artMatch) return artMatch[1];
+            const a = document.querySelector('a[href*="/artworks/"]');
+            if (a) {
+                const h = a.getAttribute('href');
+                return h.startsWith('http') ? h : `https://www.pixiv.net${h}`;
+            }
+        }
+        // Fanbox: strip query string from post URL
+        if (/fanbox\.cc/.test(pageUrl) && /\/posts\/\d+/.test(pageUrl))
+            return pageUrl.split('?')[0];
+        // ArtStation / DeviantArt: strip query string
+        if (/artstation\.com\/artwork\/|deviantart\.com/.test(pageUrl))
+            return pageUrl.split('?')[0];
+        return pageUrl;
+    }
+
+    // === Source URL Helper ===
+    const SOURCE_SITES = [
+        { p: /pixiv\.net/,               name: 'Pixiv',       color: '#0096fa' },
+        { p: /twitter\.com|x\.com|twimg\.com/, name: 'Twitter/X', color: '#1da1f2' },
+        { p: /pximg\.net|fanbox\.cc/,    name: 'Fanbox',      color: '#f96854' },
+        { p: /artstation\.com/,          name: 'ArtStation',  color: '#13aff0' },
+        { p: /deviantart\.com/,          name: 'DeviantArt',  color: '#05cc47' },
+        { p: /tumblr\.com/,              name: 'Tumblr',      color: '#35465c' },
+        { p: /bsky\.app|bsky\.social/,   name: 'Bluesky',     color: '#0085ff' },
+        { p: /weibo\.(com|cn)/,          name: 'Weibo',       color: '#df2029' },
+        { p: /booth\.pm/,                name: 'Booth',       color: '#fc4d50' },
+        { p: /fantia\.jp/,               name: 'Fantia',      color: '#e74c3c' },
+        { p: /skeb\.jp/,                 name: 'Skeb',        color: '#6772e5' },
+        { p: /reddit\.com/,              name: 'Reddit',      color: '#ff4500' },
+        { p: /instagram\.com/,           name: 'Instagram',   color: '#c13584' },
+        { p: /patreon\.com/,             name: 'Patreon',     color: '#f96854' },
+        { p: /bilibili\.com|hdslb\.com/, name: 'Bilibili',    color: '#00a1d6' },
+        { p: /discord(app)?\.com/,       name: 'Discord',     color: '#7289da' },
+        { p: /pinimg\.com|pinterest\.com/, name: 'Pinterest', color: '#e60023' },
+        { p: /ko-fi\.com/,               name: 'Ko-fi',       color: '#00aff0' },
+        { p: /lofter\.com/,              name: 'Lofter',      color: '#0080c0' },
+        { p: /nijie\.info/,              name: 'Nijie',       color: '#ff6699' },
+        { p: /furaffinity\.net/,         name: 'FurAffinity', color: '#faaf3a' },
+        { p: /gelbooru\.com/,            name: 'Gelbooru',    color: '#0050c0' },
+    ];
+
+    function detectSourceSite(url) {
+        if (!url) return null;
+        for (const s of SOURCE_SITES) { if (s.p.test(url)) return s; }
+        return null;
+    }
+
+    function fixupSourceUrl(url) {
+        if (!url) return url;
+        try {
+            const u = new URL(url);
+            const h = u.hostname;
+            // Pinterest: thumbnail → originals
+            if (h.includes('pinimg.com'))
+                return url.replace(/\/\d+x\//, '/originals/');
+            // Discord: strip query params
+            if (h.includes('cdn.discordapp.com') || h.includes('media.discordapp.net'))
+                return u.origin + u.pathname;
+            // Bilibili CDN: strip @WxH_... suffix
+            if (h.includes('hdslb.com'))
+                return url.replace(/@\d+w_\d+h[^.]*(\.[a-z]+)$/i, '$1');
+            // Fanbox/pximg: strip /c/WIDTHxHEIGHT_.../ resize path
+            if (h.includes('pximg.net') || h.includes('fanbox.cc'))
+                return url.replace(/\/c\/\d+x\d+[^/]*\//, '/');
+            // Booth: strip /c/WxH_.../ and _base_resized
+            if (h.includes('booth.pm'))
+                return url.replace(/\/c\/\d+x\d+[^/]*\//, '/').replace(/_base_resized/, '');
+            // Fantia: strip main_ prefix from filename
+            if (h.includes('fantia.jp'))
+                return url.replace(/(\/)(main_)([^/?#]+)$/, '/$3');
+            // imgix (unsigned): strip query params
+            if (h.includes('.imgix.net') && !u.searchParams.has('s'))
+                return u.origin + u.pathname;
+            return url;
+        } catch { return url; }
+    }
+
+    function initSourceHelper() {
+        const src = getSourceInput();
+        if (!src || document.getElementById('source-helper-ui')) return;
+
+        // Read URL params passed by our right-click uploader (or the extension)
+        const params = new URLSearchParams(window.location.search);
+        const paramUrl = params.get('url') || '';
+        const paramRef = params.get('ref') || '';
+
+        const helperDiv = document.createElement('div');
+        helperDiv.id = 'source-helper-ui';
+
+        const badge = document.createElement('span');
+        badge.id = 'source-site-badge';
+
+        const fixBtn = document.createElement('button');
+        fixBtn.id = 'source-fix-btn';
+        fixBtn.type = 'button';
+        fixBtn.textContent = '🔧 Fix URL';
+
+        const status = document.createElement('span');
+        status.id = 'source-fix-status';
+
+        helperDiv.append(badge, fixBtn, status);
+        src.parentNode.insertBefore(helperDiv, src.nextSibling);
+
+        const refresh = () => {
+            const val = src.value.trim();
+            const site = detectSourceSite(val);
+            if (site) {
+                badge.textContent = site.name;
+                badge.style.backgroundColor = site.color;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+            const fixed = fixupSourceUrl(val);
+            fixBtn.style.display = (fixed && fixed !== val) ? 'inline-block' : 'none';
+            if (fixed && fixed !== val) status.textContent = `→ ${fixed.length > 70 ? fixed.slice(0, 70) + '…' : fixed}`;
+            else status.textContent = '';
+        };
+
+        fixBtn.onclick = () => {
+            const fixed = fixupSourceUrl(src.value.trim());
+            if (!fixed) return;
+            src.value = fixed;
+            src.dispatchEvent(new Event('input', { bubbles: true }));
+            status.textContent = '✓ Fixed';
+            setTimeout(() => { status.textContent = ''; refresh(); }, 2000);
+        };
+
+        src.addEventListener('input', refresh);
+        src.addEventListener('change', refresh);
+
+        // If ?ref= (page URL) differs from ?url= (CDN image URL), always prefer ?ref= as source.
+        // Danbooru may pre-fill the source field with ?url= (the raw CDN URL), which is wrong —
+        // the source should be the webpage the image came from, not the image download link.
+        if (paramRef && paramRef !== paramUrl) {
+            src.value = paramRef;
+            src.dispatchEvent(new Event('input', { bubbles: true }));
+            status.textContent = '⬆ Source set to page URL';
+            setTimeout(() => { status.textContent = ''; }, 3000);
+        } else if (paramUrl && !src.value.trim()) {
+            src.value = paramUrl;
+            src.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        refresh();
+    }
 
     async function fetchTagCategories(tagNames) {
         const normalized = tagNames.map(n => n.replace(/ /g, "_")).filter(n => n.length > 0);
@@ -433,11 +609,75 @@
         liveEditor.onmouseover = handleHover;
         searchResults.onmouseover = handleHover;
 
+        initSourceHelper();
         updateAll();
         setTimeout(updateAll, 1200);
     }
 
-    const observer = new MutationObserver((mutations) => { for (const m of mutations) { if (m.addedNodes.length) { init(); break; } } });
-    observer.observe(document.body, { childList: true, subtree: true });
-    init();
+    // === Right-click image uploader (runs on all sites) ===
+    function initImageUploader() {
+        if (isDanbooru) return;
+
+        let ctxMenu = null;
+        const removeMenu = () => { if (ctxMenu) { ctxMenu.remove(); ctxMenu = null; } };
+
+        document.addEventListener('contextmenu', (e) => {
+            removeMenu();
+            const img = e.target.closest('img');
+            if (!img || !img.src || img.src.startsWith('data:') || img.src.startsWith('blob:')) return;
+
+            e.preventDefault();
+
+            const refUrl = extractSourceUrl(img, location.href);
+            const site = detectSourceSite(refUrl) || detectSourceSite(img.src);
+            const fixedUrl = fixupSourceUrl(img.src);
+            const uploadUrl = `https://danbooru.donmai.us/uploads/new?url=${encodeURIComponent(fixedUrl)}&ref=${encodeURIComponent(refUrl)}`;
+
+            ctxMenu = document.createElement('div');
+            ctxMenu.style.cssText = `
+                position: fixed; z-index: 2147483647;
+                left: ${Math.min(e.clientX, innerWidth - 230)}px;
+                top: ${Math.min(e.clientY, innerHeight - 90)}px;
+                background: #1e1e2e; color: #cdd6f4;
+                border: 1px solid rgba(205,214,244,0.15);
+                border-radius: 8px; padding: 4px 0;
+                box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+                font-family: system-ui, -apple-system, sans-serif;
+                font-size: 13px; min-width: 210px; user-select: none;
+            `;
+
+            if (site) {
+                const header = document.createElement('div');
+                header.style.cssText = `padding: 4px 14px 6px; font-size: 11px; opacity: 0.5; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 2px;`;
+                header.textContent = `From: ${site.name}`;
+                ctxMenu.appendChild(header);
+            }
+
+            const item = document.createElement('div');
+            item.style.cssText = 'padding: 8px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; margin: 2px 4px; border-radius: 5px;';
+            item.innerHTML = `<span style="font-size:16px">📤</span><span>Upload to Danbooru</span>`;
+            item.onmouseenter = () => { item.style.background = 'rgba(205,214,244,0.12)'; };
+            item.onmouseleave = () => { item.style.background = ''; };
+            item.onclick = (ev) => {
+                ev.stopPropagation();
+                GM_openInTab(uploadUrl, { active: true });
+                removeMenu();
+            };
+
+            ctxMenu.appendChild(item);
+            document.body.appendChild(ctxMenu);
+        }, true);
+
+        document.addEventListener('click', removeMenu, true);
+        document.addEventListener('scroll', removeMenu, true);
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') removeMenu(); });
+    }
+
+    initImageUploader();
+
+    if (isDanbooru) {
+        const observer = new MutationObserver((mutations) => { for (const m of mutations) { if (m.addedNodes.length) { init(); break; } } });
+        observer.observe(document.body, { childList: true, subtree: true });
+        init();
+    }
 })();
