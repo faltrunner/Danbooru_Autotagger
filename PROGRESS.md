@@ -2,6 +2,37 @@
 
 ---
 
+## [腳本 v1.4.3] - 2026-03-16
+### 右鍵選單改用 Windows 11 設計語言
+
+- **毛玻璃背景**：`backdrop-filter: blur(20px) saturate(1.6)`，搭配半透明底色。
+- **Light mode**：`rgba(249,249,249,0.96)` 背景，hover 用 `rgba(0,0,0,0.06)`（淡灰，不使用藍色）。
+- **Dark mode**：`rgba(44,44,44,0.96)` 背景，hover 用 `rgba(255,255,255,0.08)`。
+- **主題偵測**：`window.matchMedia('(prefers-color-scheme: dark)')` 自動切換，無需手動設定。
+- **圓角**：容器 `8px`，hover item `4px`。
+- **Item 留白**：`margin: 1px 4px`，hover 矩形不貼選單邊緣（符合 Win11 視覺）。
+- **分隔線縮排**：`margin: 4px 12px`，兩側不延伸至底（符合 Win11 分隔線規範）。
+- **字體**：`Segoe UI Variable Text` → `Segoe UI` → `system-ui`，字型大小 `12px`。
+
+---
+
+## [腳本 v1.4.2] - 2026-03-16
+### 選單顏色改用 CSS 系統顏色關鍵字（已被 v1.4.3 取代）
+
+- 嘗試以 `Canvas`、`CanvasText`、`Highlight`、`HighlightText`、`ButtonBorder`、`GrayText` 等 CSS 系統色彩關鍵字自動跟隨 OS 主題。
+- 實際效果不符合 Windows 11 外觀，故於 v1.4.3 改以 `matchMedia` + 手動色值實作。
+
+---
+
+## [腳本 v1.4.1] - 2026-03-16
+### 右鍵選單改為傳統樣式（已被 v1.4.2/v1.4.3 取代）
+
+- 移除深色自訂主題（`#1e1e2e`），改用淺灰背景 `#f0f0f0`、細邊框、2px 圓角、Windows 藍 hover。
+- 移除 emoji 圖示，改用純文字選單項目。
+- 此版本硬碼顏色，不跟隨系統主題，後續版本修正。
+
+---
+
 ## [腳本 v1.4.0] - 2026-03-16
 ### 右鍵選單擴充：下載 / 複製圖片 / 複製網址
 
