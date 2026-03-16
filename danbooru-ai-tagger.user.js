@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Danbooru AI 標記
 // @namespace    http://tampermonkey.net/
-// @version      1.4.2
-// @description  腳本 v1.4.2 | 字典 v1.0.0 ── 右鍵選單跟隨系統 light/dark 設定
+// @version      1.4.3
+// @description  腳本 v1.4.3 | 字典 v1.0.0 ── 右鍵選單採用 Windows 11 設計語言
 // @author       FaltRunner
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
@@ -644,38 +644,50 @@
             const fixedUrl = fixupSourceUrl(img.src);
             const uploadUrl = `https://danbooru.donmai.us/uploads/new?url=${encodeURIComponent(fixedUrl)}&ref=${encodeURIComponent(refUrl)}`;
 
+            const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const W11 = {
+                bg:       dark ? 'rgba(44,44,44,0.96)'         : 'rgba(249,249,249,0.96)',
+                text:     dark ? 'rgba(255,255,255,0.87)'       : '#1a1a1a',
+                border:   dark ? 'rgba(255,255,255,0.10)'       : 'rgba(0,0,0,0.10)',
+                shadow:   dark ? '0 8px 24px rgba(0,0,0,0.55)' : '0 8px 24px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.08)',
+                hoverBg:  dark ? 'rgba(255,255,255,0.08)'       : 'rgba(0,0,0,0.06)',
+                sepColor: dark ? 'rgba(255,255,255,0.10)'       : 'rgba(0,0,0,0.10)',
+                dimText:  dark ? 'rgba(255,255,255,0.38)'       : 'rgba(0,0,0,0.38)',
+            };
+
             ctxMenu = document.createElement('div');
             ctxMenu.style.cssText = `
                 position: fixed; z-index: 2147483647;
                 left: ${Math.min(e.clientX, innerWidth - 220)}px;
-                top: ${Math.min(e.clientY, innerHeight - 120)}px;
-                background: Canvas; color: CanvasText;
-                border: 1px solid ButtonBorder;
-                border-radius: 2px; padding: 2px 0;
-                box-shadow: 2px 2px 6px rgba(0,0,0,0.25);
-                font-family: system-ui, -apple-system, sans-serif;
-                font-size: 13px; min-width: 200px; user-select: none;
+                top: ${Math.min(e.clientY, innerHeight - 150)}px;
+                background: ${W11.bg}; color: ${W11.text};
+                border: 1px solid ${W11.border};
+                border-radius: 8px; padding: 4px 0;
+                box-shadow: ${W11.shadow};
+                backdrop-filter: blur(20px) saturate(1.6);
+                font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+                font-size: 12px; min-width: 200px; user-select: none;
             `;
 
             if (site) {
                 const header = document.createElement('div');
-                header.style.cssText = `padding: 3px 12px 4px; font-size: 11px; color: GrayText; border-bottom: 1px solid ButtonBorder; margin-bottom: 2px;`;
+                header.style.cssText = `padding: 6px 16px 4px; font-size: 11px; color: ${W11.dimText};`;
                 header.textContent = `來自：${site.name}`;
                 ctxMenu.appendChild(header);
             }
 
             const makeItem = (label, onClick) => {
                 const el = document.createElement('div');
-                el.style.cssText = 'padding: 5px 24px; cursor: default;';
+                el.style.cssText = `padding: 6px 16px; margin: 1px 4px; border-radius: 4px; cursor: default; color: ${W11.text};`;
                 el.innerHTML = `<span class="lbl">${label}</span>`;
-                el.onmouseenter = () => { el.style.background = 'Highlight'; el.style.color = 'HighlightText'; };
-                el.onmouseleave = () => { el.style.background = ''; el.style.color = ''; };
+                el.onmouseenter = () => { el.style.background = W11.hoverBg; };
+                el.onmouseleave = () => { el.style.background = ''; };
                 el.onclick = (ev) => { ev.stopPropagation(); onClick(el); };
                 return el;
             };
             const makeSep = () => {
                 const s = document.createElement('div');
-                s.style.cssText = 'border-top: 1px solid ButtonBorder; margin: 2px 0;';
+                s.style.cssText = `border-top: 1px solid ${W11.sepColor}; margin: 4px 12px;`;
                 return s;
             };
             const flash = (el, msg) => {
