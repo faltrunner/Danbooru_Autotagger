@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Danbooru AI 標記
 // @namespace    http://tampermonkey.net/
-// @version      1.4.4
-// @description  腳本 v1.4.4 | 字典 v1.0.0 ── 右鍵選單採用 Windows 11 設計語言
+// @version      1.4.5
+// @description  腳本 v1.4.5 | 字典 v1.0.0 ── 右鍵選單採用 Windows 11 設計語言
 // @author       FaltRunner
 // @updateURL    https://raw.githubusercontent.com/FaltRunner/Danbooru_Autotagger/master/danbooru-ai-tagger.user.js
 // @downloadURL  https://raw.githubusercontent.com/FaltRunner/Danbooru_Autotagger/master/danbooru-ai-tagger.user.js
