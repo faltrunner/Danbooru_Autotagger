@@ -1,10 +1,42 @@
 // ==UserScript==
 // @name         Danbooru AI 標記
 // @namespace    http://tampermonkey.net/
-// @version      1.4.3
-// @description  腳本 v1.4.3 | 字典 v1.0.0 ── 右鍵選單採用 Windows 11 設計語言
+// @version      1.4.4
+// @description  腳本 v1.4.4 | 字典 v1.0.0 ── 右鍵選單採用 Windows 11 設計語言
 // @author       FaltRunner
-// @match        *://*/*
+// @updateURL    https://raw.githubusercontent.com/FaltRunner/Danbooru_Autotagger/master/danbooru-ai-tagger.user.js
+// @downloadURL  https://raw.githubusercontent.com/FaltRunner/Danbooru_Autotagger/master/danbooru-ai-tagger.user.js
+// @match        *://*.pixiv.net/*
+// @match        *://*.twitter.com/*
+// @match        *://*.x.com/*
+// @match        *://*.twimg.com/*
+// @match        *://*.pximg.net/*
+// @match        *://*.fanbox.cc/*
+// @match        *://*.artstation.com/*
+// @match        *://*.deviantart.com/*
+// @match        *://*.tumblr.com/*
+// @match        *://*.bsky.app/*
+// @match        *://*.bsky.social/*
+// @match        *://*.weibo.com/*
+// @match        *://*.weibo.cn/*
+// @match        *://*.booth.pm/*
+// @match        *://*.fantia.jp/*
+// @match        *://*.skeb.jp/*
+// @match        *://*.reddit.com/*
+// @match        *://*.instagram.com/*
+// @match        *://*.patreon.com/*
+// @match        *://*.bilibili.com/*
+// @match        *://*.hdslb.com/*
+// @match        *://*.discord.com/*
+// @match        *://*.discordapp.com/*
+// @match        *://*.pinimg.com/*
+// @match        *://*.pinterest.com/*
+// @match        *://*.ko-fi.com/*
+// @match        *://*.lofter.com/*
+// @match        *://*.nijie.info/*
+// @match        *://*.furaffinity.net/*
+// @match        *://*.gelbooru.com/*
+// @match        *://danbooru.donmai.us/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -25,6 +57,30 @@
     const wikiCache = new Map();
     const categoryCache = new Map();
     let commonTagsZh = {}; // 外部載入的中文字典
+
+    const SCRIPT_VERSION = GM_info.script.version;
+    const VERSION_URL    = 'https://raw.githubusercontent.com/FaltRunner/Danbooru_Autotagger/master/version.json';
+    const INSTALL_URL    = 'https://raw.githubusercontent.com/FaltRunner/Danbooru_Autotagger/master/danbooru-ai-tagger.user.js';
+
+    function checkForUpdate() {
+        GM_xmlhttpRequest({
+            method: 'GET',
+            url: VERSION_URL + '?_=' + Date.now(), // 防快取
+            onload(res) {
+                try {
+                    const { version } = JSON.parse(res.responseText);
+                    if (version && version !== SCRIPT_VERSION) {
+                        const ok = confirm(
+                            `Danbooru AI 標記 有新版本！\n\n目前版本：${SCRIPT_VERSION}\n最新版本：${version}\n\n是否立即更新？`
+                        );
+                        if (ok) GM_openInTab(INSTALL_URL, { active: true });
+                    }
+                } catch {}
+            }
+        });
+    }
+
+    checkForUpdate();
 
     const DICT_VER     = '1.0.0';
     const DICT_URL     = 'https://cdn.jsdelivr.net/gh/faltrunner/Danbooru_Autotagger@master/DICTIONARY.json';
