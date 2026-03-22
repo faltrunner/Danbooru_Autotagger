@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Danbooru AI 標記
 // @namespace    http://tampermonkey.net/
-// @version      1.4.8
-// @description  腳本 v1.4.8 | 字典 v1.0.0 ── 右鍵選單採用 Windows 11 設計語言
+// @version      1.4.9
+// @description  腳本 v1.4.9 | 字典 v1.0.0 ── 右鍵選單採用 Windows 11 設計語言
 // @author       FaltRunner
 // @updateURL    https://raw.githubusercontent.com/FaltRunner/Danbooru_Autotagger/master/danbooru-ai-tagger.user.js
 // @downloadURL  https://raw.githubusercontent.com/FaltRunner/Danbooru_Autotagger/master/danbooru-ai-tagger.user.js
@@ -68,12 +68,8 @@
             onload(res) {
                 try {
                     const { version } = JSON.parse(res.responseText);
-                    if (version && version !== SCRIPT_VERSION) {
-                        const ok = confirm(
-                            `Danbooru AI 標記 有新版本！\n\n目前版本：${SCRIPT_VERSION}\n最新版本：${version}\n\n是否立即更新？`
-                        );
-                        if (ok) GM_openInTab(INSTALL_URL, { active: true });
-                    }
+                    if (version && version !== SCRIPT_VERSION)
+                        GM_openInTab(INSTALL_URL, { active: true });
                 } catch {}
             }
         });
