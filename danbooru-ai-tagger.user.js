@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Danbooru AI 標記
 // @namespace    http://tampermonkey.net/
-// @version      1.4.5
-// @description  腳本 v1.4.5 | 字典 v1.0.0 ── 右鍵選單採用 Windows 11 設計語言
+// @version      1.4.6
+// @description  腳本 v1.4.6 | 字典 v1.0.0 ── 右鍵選單採用 Windows 11 設計語言
 // @author       FaltRunner
 // @updateURL    https://raw.githubusercontent.com/FaltRunner/Danbooru_Autotagger/master/danbooru-ai-tagger.user.js
 // @downloadURL  https://raw.githubusercontent.com/FaltRunner/Danbooru_Autotagger/master/danbooru-ai-tagger.user.js
@@ -27,8 +27,6 @@
 // @match        *://*.patreon.com/*
 // @match        *://*.bilibili.com/*
 // @match        *://*.hdslb.com/*
-// @match        *://*.discord.com/*
-// @match        *://*.discordapp.com/*
 // @match        *://*.pinimg.com/*
 // @match        *://*.pinterest.com/*
 // @match        *://*.ko-fi.com/*
@@ -217,7 +215,6 @@
         { p: /instagram\.com/,           name: 'Instagram',   color: '#c13584' },
         { p: /patreon\.com/,             name: 'Patreon',     color: '#f96854' },
         { p: /bilibili\.com|hdslb\.com/, name: 'Bilibili',    color: '#00a1d6' },
-        { p: /discord(app)?\.com/,       name: 'Discord',     color: '#7289da' },
         { p: /pinimg\.com|pinterest\.com/, name: 'Pinterest', color: '#e60023' },
         { p: /ko-fi\.com/,               name: 'Ko-fi',       color: '#00aff0' },
         { p: /lofter\.com/,              name: 'Lofter',      color: '#0080c0' },
@@ -240,9 +237,6 @@
             // Pinterest: thumbnail → originals
             if (h.includes('pinimg.com'))
                 return url.replace(/\/\d+x\//, '/originals/');
-            // Discord: strip query params
-            if (h.includes('cdn.discordapp.com') || h.includes('media.discordapp.net'))
-                return u.origin + u.pathname;
             // Bilibili CDN: strip @WxH_... suffix
             if (h.includes('hdslb.com'))
                 return url.replace(/@\d+w_\d+h[^.]*(\.[a-z]+)$/i, '$1');
